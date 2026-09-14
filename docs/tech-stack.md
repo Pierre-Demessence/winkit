@@ -14,6 +14,7 @@
 | Tests | `vitest` in a `jsdom` environment |
 | Lint | `eslint` with `@antfu/eslint-config` |
 | Package manager | `npm` |
+| CI | GitHub Actions on Node 20.19.0, running lint, typecheck, test and build |
 
 `erasableSyntaxOnly` rules out enums, namespaces and constructor parameter
 properties; `verbatimModuleSyntax` requires type-only imports to be marked.
@@ -34,7 +35,8 @@ while still preserving the explicit `@pierre/winkit/styles.css` import.
 
 ## Supported targets
 
-- **Node ≥ 20** for the toolchain.
+- **Node ≥ 20.19** for the toolchain; CI runs on exactly 20.19.0, so the declared
+  floor is the tested floor.
 - **ES2020** output.
 - Browsers with the Pointer Events API. Pointer capture is used for drags when
   available and degrades to window-level listeners when it is not.

@@ -12,7 +12,8 @@ as a `file:` dependency. `preact` is a peer dependency and is never bundled.
 
 - Prefer TypeScript; keep JSX in `.tsx`, pure logic in `.ts`.
 - Co-locate tests as `*.test.ts(x)` under `tests/`.
-- Run lint + typecheck + test + build before marking work complete.
+- Run lint + typecheck + test + build before marking work complete. CI
+  (`.github/workflows/ci.yml`) runs the same four on every push and pull request.
 - Keep `docs/` current when behaviour changes; record non-trivial work under
   `docs/plans/`.
 - Only commit when explicitly asked. On a feature's final commit, move its plan

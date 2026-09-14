@@ -1,0 +1,7 @@
+# Keep LF in the repository and in every working tree, so cloning on another
+# platform cannot turn an unrelated line-ending change into a whole-file diff.
+* text=auto eol=lf
+
+# Windows scripts have to keep CRLF to run.
+*.bat text eol=crlf
+*.cmd text eol=crlf

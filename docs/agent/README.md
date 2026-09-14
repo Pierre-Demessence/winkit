@@ -35,6 +35,8 @@ runs. If install scripts are disabled, build before consuming.
 - `scripts/copy-css.mjs` — runs from `tsup`'s `onSuccess`; the stylesheet must be
   copied, it is not derived from the JS entry.
 - `tests/layout.test.ts` — extend this first when touching clamping or storage.
+- `.github/workflows/ci.yml` — runs the same four checks on every push and pull
+  request, on Node 20.19.0.
 
 ## Invariants
 

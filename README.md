@@ -29,6 +29,14 @@ and tree-shakeable. Import it once, anywhere in the app:
 import '@pierre/winkit/styles.css';
 ```
 
+## Requirements
+
+- **Preact 10** — a peer dependency, supplied by the host application.
+- **ESM only.** The package ships ES modules, so a CommonJS consumer has to use a
+  dynamic `import()`. Bundlers and ESM applications are unaffected.
+- **Node ≥ 20.19** for the toolchain. The emitted JavaScript targets ES2020 and
+  uses the Pointer Events API; pointer capture is used where the browser offers it.
+
 ## Usage
 
 ```tsx

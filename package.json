@@ -1,11 +1,19 @@
 {
   "name": "@pierre/winkit",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "A tiny, self-contained floating-window system for Preact. Drag, resize, minimize, click-to-front stacking and layout persistence, with no host coupling.",
   "author": "Pierre Demessence <pierre.demessence@gmail.com>",
   "license": "MIT",
+  "homepage": "https://github.com/Pierre-Demessence/winkit#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pierre-Demessence/winkit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Pierre-Demessence/winkit/issues"
+  },
   "keywords": [
     "preact",
     "window",
@@ -29,7 +37,7 @@
     "dist/"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   },
   "scripts": {
     "build": "tsup",
