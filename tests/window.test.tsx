@@ -138,6 +138,28 @@ describe('window semantics', () => {
     const sibling = Number(findWindow('Sibling')?.style.zIndex ?? 0);
     expect(reopened).toBeGreaterThan(sibling);
   });
+
+  it('stacks a newly mounted window above the ones already there', async () => {
+    // A window that mounts already open never fires the open transition, so its
+    // stacking order has to be right from the initial render.
+    const view = (showSecond: boolean) => (
+      <WindowLayer>
+        <Window open title="First" />
+        {showSecond && <Window open title="Second" />}
+      </WindowLayer>
+    );
+
+    await act(async () => {
+      render(view(false), host);
+    });
+    await act(async () => {
+      render(view(true), host);
+    });
+
+    const first = Number(findWindow('First')?.style.zIndex ?? 0);
+    const second = Number(findWindow('Second')?.style.zIndex ?? 0);
+    expect(second).toBeGreaterThan(first);
+  });
   it('rejects unusable props rather than emitting a broken style', () => {
     render(
       <WindowLayer>

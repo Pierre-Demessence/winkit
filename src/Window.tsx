@@ -38,7 +38,11 @@ export function Window(props: WindowProps) {
   const [pos, setPos] = useState<Point>(restored?.pos ?? toPoint(defaultPosition) ?? DEFAULT_POS);
   const [size, setSize] = useState<Size>(restored?.size ?? toSize(defaultSize) ?? DEFAULT_SIZE);
   const [minimized, setMinimized] = useState<boolean>(restored?.minimized ?? false);
-  const [z, setZ] = useState(1);
+  // Start above whatever is already mounted. A window that mounts *already open*
+  // never fires the open transition below, so without this a freshly opened window
+  // would start at the bottom of the stack and appear behind windows the user has
+  // already clicked — the one window they just asked for being the hidden one.
+  const [z, setZ] = useState(() => layer.focus());
 
   const windowRef = useRef<HTMLDivElement>(null);
   const [titleId] = useState(() => `wk-title-${++instanceSequence}`);
