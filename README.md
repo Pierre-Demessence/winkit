@@ -175,7 +175,9 @@ npm install      # also builds, via the prepare script
 npm run lint     # eslint (@antfu)
 npm run typecheck
 npm test         # vitest + jsdom
+npm run test:coverage  # vitest with v8 coverage
 npm run build    # tsup → dist/ (js + d.ts) and dist/winkit.css
+npm run check    # lint + typecheck + test + build
 ```
 
 See [docs/INDEX.md](docs/INDEX.md).

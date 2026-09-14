@@ -17,6 +17,8 @@ npm run lint       # eslint --cache .
 npm run lint:fix   # eslint --cache --fix .
 npm test           # vitest run (jsdom)
 npm run test:watch
+npm run test:coverage  # vitest + v8 coverage
+npm run check          # lint, typecheck, test, build - the same four as CI
 ```
 
 There is no dev server. Exercise the library in a consuming app.
@@ -32,8 +34,8 @@ runs. If install scripts are disabled, build before consuming.
 - `src/WindowLayer.tsx` — stacking order and the coordinate space windows clamp to.
 - `src/winkit.css` — all styling; every themeable value is a `--wk-*` custom
   property with an inline fallback.
-- `scripts/copy-css.mjs` — runs from `tsup`'s `onSuccess`; the stylesheet must be
-  copied, it is not derived from the JS entry.
+- `tsup.config.ts` — holds the stylesheet's `copy`-loader entry; declarations are
+  scoped to `src/index.ts` so the CSS entry emits no empty `.d.ts`.
 - `tests/layout.test.ts` — extend this first when touching clamping or storage.
 - `.github/workflows/ci.yml` — runs the same four checks on every push and pull
   request, on Node 20.19.0.
@@ -62,5 +64,5 @@ runs. If install scripts are disabled, build before consuming.
 
 ## Verification checklist
 
-Before reporting work complete: `npm run lint`, `npm run typecheck`,
-`npm test`, `npm run build` — all four, in that order.
+Before reporting work complete: `npm run check`, which runs lint, typecheck, test
+and build in that order.

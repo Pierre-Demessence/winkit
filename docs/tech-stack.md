@@ -11,7 +11,7 @@
 |---|---|
 | Language | TypeScript, `strict`, `verbatimModuleSyntax`, `erasableSyntaxOnly`, `noUncheckedIndexedAccess` |
 | Bundler | `tsup` (esbuild + `rollup-plugin-dts`) |
-| Tests | `vitest` in a `jsdom` environment |
+| Tests | `vitest` in a `jsdom` environment, with `@vitest/coverage-v8` on demand |
 | Lint | `eslint` with `@antfu/eslint-config` |
 | Package manager | `npm` |
 | CI | GitHub Actions on Node 20.19.0, running lint, typecheck, test and build |
@@ -27,7 +27,7 @@ properties; `verbatimModuleSyntax` requires type-only imports to be marked.
 |---|---|---|
 | `index.js` | `@pierre/winkit` | Single ESM bundle; `preact` left external |
 | `index.d.ts` | — | Bundled declarations |
-| `winkit.css` | `@pierre/winkit/styles.css` | Copied by `scripts/copy-css.mjs` |
+| `winkit.css` | `@pierre/winkit/styles.css` | A second entry, copied verbatim by the `copy` loader |
 
 The stylesheet is a separate entry point rather than a side-effect import. That
 keeps the JavaScript entry free of side effects, so bundlers can tree-shake it

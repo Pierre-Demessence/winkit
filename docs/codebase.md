@@ -10,8 +10,6 @@ src/
   WindowLayer.tsx    window host, stacking order, coordinate space
   Window.tsx         one window: drag, resize, minimize, persistence
   winkit.css         styles, fully tokenised with --wk-* custom properties
-scripts/
-  copy-css.mjs       copies the stylesheet into dist/ after the JS build
 tests/
   layout.test.ts     the pure seam: clamping, validation, storage failures
   window.test.tsx    component semantics and gesture listener lifecycle
@@ -49,7 +47,8 @@ place without following imports across modules.
 
 ## Testing
 
-`npm test` runs `vitest` under `jsdom`.
+`npm test` runs `vitest` under `jsdom`; `npm run test:coverage` adds the v8 coverage
+report.
 
 - `tests/layout.test.ts` covers clamping, storage validation and storage
   failures — the failure modes that are invisible in a browser until they bite.
