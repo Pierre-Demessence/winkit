@@ -1,0 +1,106 @@
+/*
+ * Every colour is a CSS custom property with a dark default, so a host app can
+ * retheme every window from one place. Nothing below hardcodes a colour that a
+ * variable does not already cover.
+ */
+
+.wk-layer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--wk-layer-z, 20);
+  pointer-events: none;
+}
+
+.wk-window {
+  position: absolute;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--wk-bg, rgba(16, 20, 26, 0.95));
+  border: 1px solid var(--wk-border, #2a3138);
+  border-radius: var(--wk-radius, 8px);
+  overflow: hidden;
+  box-shadow: var(--wk-shadow, 0 6px 24px rgba(0, 0, 0, 0.4));
+  font: var(--wk-font, 12px system-ui, sans-serif);
+  color: var(--wk-fg, #e6e8ea);
+}
+
+/* Inward offset: an ancestor with `overflow: hidden` must not clip the ring. */
+.wk-window:focus-visible {
+  outline: 2px solid var(--wk-focus, #6ea8fe);
+  outline-offset: -2px;
+}
+
+.wk-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--wk-title, #1b222a);
+  cursor: move;
+  user-select: none;
+  touch-action: none;
+}
+
+.wk-title-text {
+  flex: 1;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wk-btn {
+  width: 20px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--wk-btn-bg, #222a32);
+  border: 1px solid var(--wk-btn-border, #39424c);
+  border-radius: 4px;
+  color: var(--wk-btn-fg, #e6e8ea);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.wk-btn:hover {
+  background: var(--wk-btn-bg-hover, #2c3742);
+}
+
+.wk-btn:focus-visible {
+  outline: 2px solid var(--wk-focus, #6ea8fe);
+  outline-offset: 1px;
+}
+
+.wk-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: 8px;
+  overflow: auto;
+}
+
+.wk-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.wk-resize::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--wk-resize, #4a545e);
+  border-bottom: 2px solid var(--wk-resize, #4a545e);
+}

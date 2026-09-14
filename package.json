@@ -1,0 +1,56 @@
+{
+  "name": "@pierre/winkit",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A tiny, self-contained floating-window system for Preact. Drag, resize, minimize, click-to-front stacking and layout persistence, with no host coupling.",
+  "author": "Pierre Demessence <pierre.demessence@gmail.com>",
+  "license": "MIT",
+  "keywords": [
+    "preact",
+    "window",
+    "panel",
+    "floating",
+    "dashboard"
+  ],
+  "sideEffects": [
+    "./dist/winkit.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./dist/winkit.css"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --cache .",
+    "lint:fix": "eslint --cache --fix .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepare": "npm run build"
+  },
+  "peerDependencies": {
+    "preact": "^10.0.0"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^8.0.0",
+    "eslint": "^10.2.0",
+    "jiti": "^2.7.0",
+    "jsdom": "^29.0.1",
+    "preact": "^10.29.8",
+    "tsup": "^8.3.5",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.2"
+  }
+}
