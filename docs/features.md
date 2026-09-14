@@ -9,7 +9,7 @@
 | Resize from the corner | Built | Respects `minSize` and the layer bounds |
 | Minimize / restore | Built | Per window, remembered across reloads |
 | Close | Built | Only when the host passes `onClose` — no dead control |
-| Click-to-front stacking | Built | Clicking anywhere in a window raises it; a reopened window comes to the front |
+| Click-to-front stacking | Built | Clicking anywhere in a window raises it; a newly mounted window starts above the ones already there, and a reopened one returns to the front |
 | Layout persistence | Built | Opt-in per window via `persistKey`; validated on read |
 | Custom persistence target | Built | `storage` accepts any `{ getItem, setItem }` |
 | Region-confined layers | Built | Confine the layer with CSS; windows clamp to it automatically |

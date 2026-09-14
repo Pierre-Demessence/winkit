@@ -42,6 +42,9 @@ export function Window(props: WindowProps) {
   // never fires the open transition below, so without this a freshly opened window
   // would start at the bottom of the stack and appear behind windows the user has
   // already clicked — the one window they just asked for being the hidden one.
+  // Safe during render: Preact invokes a state initialiser exactly once and does not
+  // double-render (its StrictMode is a pass-through), and the worst case of a render
+  // that never commits is a skipped number, which nothing observes.
   const [z, setZ] = useState(() => layer.focus());
 
   const windowRef = useRef<HTMLDivElement>(null);
