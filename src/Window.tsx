@@ -149,7 +149,6 @@ export function Window(props: WindowProps) {
    * releases every one of them.
    */
   const gestures = useRef(new Map<number, () => void>());
-  const titleBar = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const pending = gestures.current;
     return () => {
@@ -209,6 +208,23 @@ export function Window(props: WindowProps) {
     gestures.current.set(pointerId, release);
   };
 
+  /**
+   * Shared preamble for the drag and resize gestures: raise the window, keep the
+   * press from reaching the layer, then report pointer deltas from the press
+   * point until release. The capture target is the element carrying the handler.
+   */
+  const followPointer = (event: PointerEvent, onDelta: (delta: Point) => void): void => {
+    bringToFront();
+    event.stopPropagation();
+
+    const startX = event.clientX;
+    const startY = event.clientY;
+
+    beginGesture(event, event.currentTarget as HTMLElement | null, (move) => {
+      onDelta({ x: move.clientX - startX, y: move.clientY - startY });
+    });
+  };
+
   const startDrag = (event: PointerEvent): void => {
     if (event.button !== 0)
       return;
@@ -217,15 +233,9 @@ export function Window(props: WindowProps) {
     if (event.target instanceof Element && event.target.closest('button'))
       return;
 
-    bringToFront();
-    event.stopPropagation();
-
-    const startX = event.clientX;
-    const startY = event.clientY;
     const origin = latest.current.pos;
-
-    beginGesture(event, titleBar.current, (move) => {
-      const next = { x: origin.x + (move.clientX - startX), y: origin.y + (move.clientY - startY) };
+    followPointer(event, (delta) => {
+      const next = { x: origin.x + delta.x, y: origin.y + delta.y };
       const bounds = layer.getBounds();
       setPos(bounds.w > 0 && bounds.h > 0
         ? clampPosition(next, latest.current.size, bounds)
@@ -237,15 +247,8 @@ export function Window(props: WindowProps) {
     if (event.button !== 0)
       return;
 
-    bringToFront();
-    event.stopPropagation();
-
-    const startX = event.clientX;
-    const startY = event.clientY;
     const origin = { pos: latest.current.pos, size: latest.current.size };
-
-    beginGesture(event, event.currentTarget as HTMLElement | null, (move) => {
-      const delta = { x: move.clientX - startX, y: move.clientY - startY };
+    followPointer(event, (delta) => {
       const bounds = layer.getBounds();
       const measurable = bounds.w > 0 && bounds.h > 0;
 
@@ -284,7 +287,7 @@ export function Window(props: WindowProps) {
       onKeyDown={handleKeyDown}
       onPointerDown={bringToFront}
     >
-      <div ref={titleBar} class="wk-title" onPointerDown={startDrag}>
+      <div class="wk-title" onPointerDown={startDrag}>
         <span id={titleId} class="wk-title-text">{title}</span>
         <button
           type="button"

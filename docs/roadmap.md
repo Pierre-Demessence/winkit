@@ -33,8 +33,3 @@ here is committed to a release.
 - **Dev warning** when a `Window` renders outside a `WindowLayer`, where focus
   and clamping silently degrade.
 - **Tabbing** — combine several windows into one tabbed window.
-
-## Internal
-
-- Extract a shared pointer-follow helper; `startDrag` and `startResize` are close
-  duplicates.
