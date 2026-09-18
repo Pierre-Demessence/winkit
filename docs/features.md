@@ -6,7 +6,7 @@
 |---|---|---|
 | Floating windows over any content | Built | The layer is click-through where empty, so a canvas or dashboard below stays interactive |
 | Drag by the title bar | Built | Clamped to the layer; pointer capture keeps the drag alive outside the page |
-| Resize from the corner | Built | Respects `minSize` and the layer bounds |
+| Resize from any edge | Built | Eight handles — four edges and four corners; west/north edges move the origin. Respects `minSize` and the layer bounds |
 | Minimize / restore | Built | Per window, remembered across reloads |
 | Close | Built | Only when the host passes `onClose` — no dead control |
 | Click-to-front stacking | Built | Clicking anywhere in a window raises it; a newly mounted window starts above the ones already there, and a reopened one returns to the front |

@@ -313,3 +313,97 @@ describe('drag gestures', () => {
     expect(removed).toEqual(expect.arrayContaining(['pointermove', 'pointerup', 'pointercancel']));
   });
 });
+
+describe('resize gestures', () => {
+  it('exposes a handle on every edge and corner', () => {
+    render(
+      <WindowLayer>
+        <Window open title="T" />
+      </WindowLayer>,
+      host,
+    );
+
+    const handles = [...host.querySelectorAll('.wk-resize')].map(el => el.className.split(' ')[1]);
+    expect(handles).toEqual([
+      'wk-resize-n',
+      'wk-resize-s',
+      'wk-resize-e',
+      'wk-resize-w',
+      'wk-resize-ne',
+      'wk-resize-nw',
+      'wk-resize-se',
+      'wk-resize-sw',
+    ]);
+  });
+
+  it('starts a resize gesture from an edge handle', () => {
+    render(
+      <WindowLayer>
+        <Window open title="T" />
+      </WindowLayer>,
+      host,
+    );
+
+    const spy = vi.spyOn(window, 'addEventListener');
+    const handle = host.querySelector<HTMLElement>('.wk-resize-e');
+    if (!handle)
+      throw new Error('expected an east resize handle');
+    pointerDown(handle);
+
+    const moves = spy.mock.calls.filter(([type]) => type === 'pointermove');
+    spy.mockRestore();
+    expect(moves).toHaveLength(1);
+  });
+
+  it('grows from the south-east corner without moving the origin', async () => {
+    await act(async () => {
+      render(
+        <WindowLayer>
+          <Window open defaultPosition={{ x: 24, y: 64 }} defaultSize={{ h: 220, w: 320 }} title="T" />
+        </WindowLayer>,
+        host,
+      );
+    });
+
+    const handle = host.querySelector<HTMLElement>('.wk-resize-se');
+    if (!handle)
+      throw new Error('expected a south-east handle');
+
+    await act(async () => {
+      pointerDown(handle, 1);
+      window.dispatchEvent(pointerEvent('pointermove', 1, { clientX: 50, clientY: 30 }));
+    });
+
+    const element = dialog();
+    expect(element?.style.width).toBe('370px');
+    expect(element?.style.height).toBe('250px');
+    expect(element?.style.left).toBe('24px');
+    expect(element?.style.top).toBe('64px');
+  });
+
+  it('moves the origin when growing from the north-west corner', async () => {
+    await act(async () => {
+      render(
+        <WindowLayer>
+          <Window open defaultPosition={{ x: 24, y: 64 }} defaultSize={{ h: 220, w: 320 }} title="T" />
+        </WindowLayer>,
+        host,
+      );
+    });
+
+    const handle = host.querySelector<HTMLElement>('.wk-resize-nw');
+    if (!handle)
+      throw new Error('expected a north-west handle');
+
+    await act(async () => {
+      pointerDown(handle, 1);
+      window.dispatchEvent(pointerEvent('pointermove', 1, { clientX: -30, clientY: -40 }));
+    });
+
+    const element = dialog();
+    expect(element?.style.left).toBe('0px');
+    expect(element?.style.top).toBe('24px');
+    expect(element?.style.width).toBe('344px');
+    expect(element?.style.height).toBe('260px');
+  });
+});

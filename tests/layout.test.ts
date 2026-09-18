@@ -1,7 +1,7 @@
 import type { StorageLike } from '../src/types';
 import { describe, expect, it } from 'vitest';
 
-import { clampPosition, clampSize, DEFAULT_MIN, DEFAULT_POS, DEFAULT_SIZE, parseSavedLayout, readSavedLayout, toPoint, toSize, writeSavedLayout } from '../src/layout';
+import { clampPosition, clampSize, DEFAULT_MIN, DEFAULT_POS, DEFAULT_SIZE, parseSavedLayout, readSavedLayout, resizeRect, toPoint, toSize, writeSavedLayout } from '../src/layout';
 
 const BOUNDS = { h: 600, w: 800 };
 
@@ -34,6 +34,62 @@ describe('clampSize', () => {
 
   it('lets the minimum win when the bounds are smaller than it', () => {
     expect(clampSize({ h: 50, w: 50 }, DEFAULT_MIN, { h: 40, w: 40 })).toEqual({ h: 120, w: 180 });
+  });
+});
+
+describe('resizeRect', () => {
+  const ORIGIN = { pos: { x: 100, y: 80 }, size: { h: 200, w: 300 } };
+
+  it('grows east and south from a fixed origin', () => {
+    const next = resizeRect(ORIGIN, { x: 'e', y: 's' }, { x: 40, y: 30 }, DEFAULT_MIN, BOUNDS);
+    expect(next).toEqual({ pos: { x: 100, y: 80 }, size: { h: 230, w: 340 } });
+  });
+
+  it('moves the origin when dragging the west and north edges', () => {
+    const next = resizeRect(ORIGIN, { x: 'w', y: 'n' }, { x: -20, y: -10 }, DEFAULT_MIN, BOUNDS);
+    // Right edge (400) and bottom edge (280) stay put; origin and size follow.
+    expect(next).toEqual({ pos: { x: 80, y: 70 }, size: { h: 210, w: 320 } });
+  });
+
+  it('anchors the unaffected axis for a single edge', () => {
+    const next = resizeRect(ORIGIN, { x: 'e' }, { x: 40, y: 999 }, DEFAULT_MIN, BOUNDS);
+    expect(next).toEqual({ pos: { x: 100, y: 80 }, size: { h: 200, w: 340 } });
+  });
+
+  it('keeps an east/south grow inside the bounds', () => {
+    const next = resizeRect(ORIGIN, { x: 'e', y: 's' }, { x: 999, y: 999 }, DEFAULT_MIN, BOUNDS);
+    // Right capped at bounds.w (800 - 100), bottom at bounds.h (600 - 80).
+    expect(next.size).toEqual({ h: 520, w: 700 });
+  });
+
+  it('enforces the minimum size from every edge', () => {
+    const east = resizeRect(ORIGIN, { x: 'e' }, { x: -999, y: 0 }, DEFAULT_MIN, BOUNDS);
+    expect(east.size.w).toBe(DEFAULT_MIN.w);
+
+    const west = resizeRect(ORIGIN, { x: 'w' }, { x: 999, y: 0 }, DEFAULT_MIN, BOUNDS);
+    // Right edge is 400, so the origin cannot pass 400 - min.w and width holds at min.
+    expect(west.size.w).toBe(DEFAULT_MIN.w);
+    expect(west.pos.x).toBe(400 - DEFAULT_MIN.w);
+  });
+
+  it('never lets the west/north origin cross the layer edge', () => {
+    const next = resizeRect(ORIGIN, { x: 'w', y: 'n' }, { x: -999, y: -999 }, DEFAULT_MIN, BOUNDS);
+    expect(next.pos).toEqual({ x: 0, y: 0 });
+    expect(next.size).toEqual({ h: 280, w: 400 });
+  });
+
+  it('pulls the anchored far edge in when the bounds shrink mid-gesture', () => {
+    // Right edge starts at 400; a west drag against tighter bounds must keep the
+    // far edge on-screen rather than anchoring it off the new bounds.
+    const next = resizeRect(ORIGIN, { x: 'w' }, { x: -20, y: 0 }, DEFAULT_MIN, { h: 600, w: 360 });
+    expect(next.pos.x).toBe(80);
+    expect(next.size.w).toBe(280);
+  });
+
+  it('falls back to the minimum and origin floor when the layer is unmeasured', () => {
+    const next = resizeRect(ORIGIN, { x: 'e', y: 's' }, { x: 999, y: 999 }, DEFAULT_MIN, undefined);
+    expect(next.size).toEqual({ h: 1199, w: 1299 });
+    expect(next.pos).toEqual({ x: 100, y: 80 });
   });
 });
 

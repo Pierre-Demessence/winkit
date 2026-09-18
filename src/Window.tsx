@@ -1,11 +1,26 @@
-import type { Point, Size, StorageLike, WindowProps } from './types';
+import type { Point, ResizeEdges, Size, StorageLike, WindowProps } from './types';
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 
-import { clampPosition, clampSize, DEFAULT_MIN, DEFAULT_POS, DEFAULT_SIZE, readSavedLayout, toPoint, toSize, writeSavedLayout } from './layout';
+import { clampPosition, clampSize, DEFAULT_MIN, DEFAULT_POS, DEFAULT_SIZE, readSavedLayout, resizeRect, toPoint, toSize, writeSavedLayout } from './layout';
 import { useWindowLayer } from './WindowLayer';
 
 /** Debounce for writing layout to storage, so a drag is one write, not hundreds. */
 const SAVE_DEBOUNCE_MS = 300;
+
+/**
+ * The eight resize handles, in DOM order. Corners come after edges so they paint
+ * on top and win the overlap at each corner.
+ */
+const RESIZE_HANDLES: { edges: ResizeEdges; name: string }[] = [
+  { edges: { y: 'n' }, name: 'n' },
+  { edges: { y: 's' }, name: 's' },
+  { edges: { x: 'e' }, name: 'e' },
+  { edges: { x: 'w' }, name: 'w' },
+  { edges: { x: 'e', y: 'n' }, name: 'ne' },
+  { edges: { x: 'w', y: 'n' }, name: 'nw' },
+  { edges: { x: 'e', y: 's' }, name: 'se' },
+  { edges: { x: 'w', y: 's' }, name: 'sw' },
+];
 
 /**
  * Monotonic per-document counter for the title's id. `useId` is per Preact root,
@@ -135,7 +150,6 @@ export function Window(props: WindowProps) {
    */
   const gestures = useRef(new Map<number, () => void>());
   const titleBar = useRef<HTMLDivElement>(null);
-  const grip = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const pending = gestures.current;
     return () => {
@@ -219,7 +233,7 @@ export function Window(props: WindowProps) {
     });
   };
 
-  const startResize = (event: PointerEvent): void => {
+  const startResize = (edges: ResizeEdges) => (event: PointerEvent): void => {
     if (event.button !== 0)
       return;
 
@@ -228,26 +242,18 @@ export function Window(props: WindowProps) {
 
     const startX = event.clientX;
     const startY = event.clientY;
-    const origin = latest.current.size;
+    const origin = { pos: latest.current.pos, size: latest.current.size };
 
-    beginGesture(event, grip.current, (move) => {
-      const requested = { h: origin.h + (move.clientY - startY), w: origin.w + (move.clientX - startX) };
+    beginGesture(event, event.currentTarget as HTMLElement | null, (move) => {
+      const delta = { x: move.clientX - startX, y: move.clientY - startY };
       const bounds = layer.getBounds();
       const measurable = bounds.w > 0 && bounds.h > 0;
 
-      const nextSize = measurable
-        ? clampSize(requested, minFloor, bounds)
-        : { h: Math.max(minFloor.h, requested.h), w: Math.max(minFloor.w, requested.w) };
-      setSize(nextSize);
-
-      // Growing towards an edge must not push the window — or its own grip —
-      // outside the layer.
-      if (measurable) {
-        const current = latest.current.pos;
-        const nextPos = clampPosition(current, nextSize, bounds);
-        if (nextPos.x !== current.x || nextPos.y !== current.y)
-          setPos(nextPos);
-      }
+      const next = resizeRect(origin, edges, delta, minFloor, measurable ? bounds : undefined);
+      setSize(next.size);
+      // Only the west/north edges move the origin; the others leave it untouched.
+      if (next.pos.x !== latest.current.pos.x || next.pos.y !== latest.current.pos.y)
+        setPos(next.pos);
     });
   };
 
@@ -296,7 +302,14 @@ export function Window(props: WindowProps) {
         )}
       </div>
       {!minimized && <div class="wk-body">{children}</div>}
-      {!minimized && <div ref={grip} aria-hidden="true" class="wk-resize" onPointerDown={startResize} />}
+      {!minimized && RESIZE_HANDLES.map(handle => (
+        <div
+          key={handle.name}
+          aria-hidden="true"
+          class={`wk-resize wk-resize-${handle.name}`}
+          onPointerDown={startResize(handle.edges)}
+        />
+      ))}
     </div>
   );
 }

@@ -17,6 +17,15 @@ export interface Bounds {
 }
 
 /**
+ * Which edges a resize gesture moves. An absent axis stays anchored; `w`/`n`
+ * move the window's origin as they resize, `e`/`s` grow from a fixed origin.
+ */
+export interface ResizeEdges {
+  x?: 'e' | 'w';
+  y?: 'n' | 's';
+}
+
+/**
  * Minimal key/value storage, so window layout persistence can be routed
  * anywhere (localStorage, a shared save blob, an in-memory stub in tests).
  */

@@ -4,7 +4,7 @@
  * are unit-testable without a browser.
  */
 
-import type { Bounds, Point, SavedLayout, Size, StorageLike } from './types';
+import type { Bounds, Point, ResizeEdges, SavedLayout, Size, StorageLike } from './types';
 
 export const DEFAULT_POS: Point = { x: 24, y: 64 };
 export const DEFAULT_SIZE: Size = { w: 320, h: 220 };
@@ -117,4 +117,46 @@ export function clampSize(size: Size, min: Size, bounds: Bounds): Size {
     h: Math.min(Math.max(min.h, size.h), Math.max(min.h, bounds.h)),
     w: Math.min(Math.max(min.w, size.w), Math.max(min.w, bounds.w)),
   };
+}
+
+/**
+ * Applies a resize gesture to a rectangle. The `e`/`s` edges grow from a fixed
+ * origin; the `w`/`n` edges anchor the opposite edge, so shrinking the width
+ * pushes the origin right instead of stretching off the left. Pass `undefined`
+ * bounds while the layer is not yet measurable — then only the minimum and the
+ * origin floor apply. As in `clampSize`, the minimum wins over a smaller bound.
+ */
+export function resizeRect(
+  origin: { pos: Point; size: Size },
+  edges: ResizeEdges,
+  delta: Point,
+  min: Size,
+  bounds: Bounds | undefined,
+): { pos: Point; size: Size } {
+  let { x, y } = origin.pos;
+  let { h, w } = origin.size;
+
+  if (edges.x === 'e') {
+    const room = bounds ? bounds.w - x : Number.POSITIVE_INFINITY;
+    w = Math.min(Math.max(min.w, origin.size.w + delta.x), Math.max(min.w, room));
+  }
+  else if (edges.x === 'w') {
+    // Anchor the right edge, capped to the bounds so a layer that shrinks
+    // mid-gesture pulls the far edge in rather than stranding it off-screen.
+    const right = bounds ? Math.min(origin.pos.x + origin.size.w, bounds.w) : origin.pos.x + origin.size.w;
+    x = Math.min(Math.max(0, origin.pos.x + delta.x), right - min.w);
+    w = right - x;
+  }
+
+  if (edges.y === 's') {
+    const room = bounds ? bounds.h - y : Number.POSITIVE_INFINITY;
+    h = Math.min(Math.max(min.h, origin.size.h + delta.y), Math.max(min.h, room));
+  }
+  else if (edges.y === 'n') {
+    const bottom = bounds ? Math.min(origin.pos.y + origin.size.h, bounds.h) : origin.pos.y + origin.size.h;
+    y = Math.min(Math.max(0, origin.pos.y + delta.y), bottom - min.h);
+    h = bottom - y;
+  }
+
+  return { pos: { x, y }, size: { h, w } };
 }

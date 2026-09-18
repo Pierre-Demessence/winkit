@@ -65,6 +65,9 @@
   cursor: pointer;
   font-size: 13px;
   line-height: 1;
+  /* Sit above the top-corner resize handles so they cannot steal a click. */
+  position: relative;
+  z-index: 1;
 }
 
 .wk-btn:hover {
@@ -86,15 +89,79 @@
 
 .wk-resize {
   position: absolute;
+  touch-action: none;
+  /* Keep handles below the title-bar buttons (z-index 1) so the top-corner
+     handles never win a click over them, independent of DOM order. */
+  z-index: 0;
+}
+
+/* Edge strips run the full side; corner squares sit on top and win the overlap. */
+.wk-resize-n {
+  top: 0;
+  left: 0;
   right: 0;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.wk-resize-s {
   bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.wk-resize-e {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+.wk-resize-w {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+.wk-resize-ne {
+  top: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nesw-resize;
+}
+
+.wk-resize-nw {
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+}
+
+.wk-resize-se {
+  bottom: 0;
+  right: 0;
   width: 16px;
   height: 16px;
   cursor: nwse-resize;
-  touch-action: none;
 }
 
-.wk-resize::after {
+.wk-resize-sw {
+  bottom: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nesw-resize;
+}
+
+/* Only the bottom-right corner carries the visible grip decoration. */
+.wk-resize-se::after {
   content: '';
   position: absolute;
   right: 3px;
