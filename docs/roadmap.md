@@ -7,8 +7,6 @@ here is committed to a release.
 
 - **Docking** — persistent edge attachment between windows, moving and resizing
   as one unit until undocked. The main gap for a dashboard layout.
-- **Snapping** — one-shot alignment to layer edges or other windows while
-  dragging.
 - **Maximize / restore** — double-click the title bar or a button, remembering
   the previous bounds.
 - **Cross-tab layout sync** — via the `storage` event.

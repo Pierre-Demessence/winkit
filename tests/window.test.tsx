@@ -523,3 +523,155 @@ describe('onLayoutChange', () => {
     expect(second).not.toHaveBeenCalled();
   });
 });
+
+describe('snapping', () => {
+  // jsdom leaves getBoundingClientRect at zero, so the layer reads as unmeasured
+  // and snapping is skipped. Give the layer a real rectangle to exercise it.
+  function stubLayerBounds(width = 800, height = 600): void {
+    const layerEl = host.querySelector<HTMLElement>('.wk-layer');
+    if (!layerEl)
+      throw new Error('expected a layer');
+    Object.defineProperty(layerEl, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ bottom: height, height, left: 0, right: width, toJSON: () => {}, top: 0, width, x: 0, y: 0 }),
+    });
+  }
+
+  function drag(window: HTMLElement, clientX: number, clientY = 0): void {
+    const title = window.querySelector<HTMLElement>('.wk-title');
+    if (!title)
+      throw new Error('expected a title bar');
+    pointerDown(title, 1);
+    globalThis.window.dispatchEvent(pointerEvent('pointermove', 1, { clientX, clientY }));
+  }
+
+  it('snaps a dragged window edge to a sibling', async () => {
+    await act(async () => {
+      render(
+        <WindowLayer>
+          <Window open defaultPosition={{ x: 100, y: 50 }} defaultSize={{ h: 150, w: 200 }} title="Anchor" />
+          <Window open snap defaultPosition={{ x: 400, y: 50 }} defaultSize={{ h: 150, w: 200 }} title="Mover" />
+        </WindowLayer>,
+        host,
+      );
+    });
+    stubLayerBounds();
+
+    const mover = findWindow('Mover');
+    if (!mover)
+      throw new Error('expected the mover');
+
+    // Left edge 400 - 95 = 305 lands within 8px of the sibling's right edge (300).
+    await act(async () => {
+      drag(mover, -95);
+    });
+
+    expect(mover.style.left).toBe('300px');
+  });
+
+  it('snaps a dragged window to the layer edge', async () => {
+    await act(async () => {
+      render(
+        <WindowLayer>
+          <Window open snap defaultPosition={{ x: 400, y: 50 }} defaultSize={{ h: 150, w: 200 }} title="Mover" />
+        </WindowLayer>,
+        host,
+      );
+    });
+    stubLayerBounds();
+
+    const mover = findWindow('Mover');
+    if (!mover)
+      throw new Error('expected the mover');
+
+    // Left edge 400 - 397 = 3 lands within 8px of the layer's left edge (0).
+    await act(async () => {
+      drag(mover, -397);
+    });
+
+    expect(mover.style.left).toBe('0px');
+  });
+
+  it('does not snap when the prop is off', async () => {
+    await act(async () => {
+      render(
+        <WindowLayer>
+          <Window open defaultPosition={{ x: 100, y: 50 }} defaultSize={{ h: 150, w: 200 }} title="Anchor" />
+          <Window open defaultPosition={{ x: 400, y: 50 }} defaultSize={{ h: 150, w: 200 }} title="Mover" />
+        </WindowLayer>,
+        host,
+      );
+    });
+    stubLayerBounds();
+
+    const mover = findWindow('Mover');
+    if (!mover)
+      throw new Error('expected the mover');
+
+    await act(async () => {
+      drag(mover, -95);
+    });
+
+    expect(mover.style.left).toBe('305px');
+  });
+
+  it('snaps a resized edge to a sibling edge', async () => {
+    await act(async () => {
+      render(
+        <WindowLayer>
+          <Window open defaultPosition={{ x: 400, y: 50 }} defaultSize={{ h: 150, w: 200 }} title="Anchor" />
+          <Window open snap defaultPosition={{ x: 50, y: 50 }} defaultSize={{ h: 150, w: 200 }} title="Mover" />
+        </WindowLayer>,
+        host,
+      );
+    });
+    stubLayerBounds();
+
+    const mover = findWindow('Mover');
+    if (!mover)
+      throw new Error('expected the mover');
+    const handle = mover.querySelector<HTMLElement>('.wk-resize-e');
+    if (!handle)
+      throw new Error('expected an east handle');
+
+    // Right edge 250 + 145 = 395 lands within 8px of the sibling's left edge (400).
+    await act(async () => {
+      pointerDown(handle, 1);
+      globalThis.window.dispatchEvent(pointerEvent('pointermove', 1, { clientX: 145, clientY: 0 }));
+    });
+
+    expect(mover.style.width).toBe('350px');
+  });
+
+  it('does not snap to a minimized sibling', async () => {
+    await act(async () => {
+      render(
+        <WindowLayer>
+          <Window open defaultPosition={{ x: 100, y: 50 }} defaultSize={{ h: 150, w: 200 }} title="Anchor" />
+          <Window open snap defaultPosition={{ x: 400, y: 50 }} defaultSize={{ h: 150, w: 200 }} title="Mover" />
+        </WindowLayer>,
+        host,
+      );
+    });
+    stubLayerBounds();
+
+    const anchor = findWindow('Anchor');
+    const minimize = anchor?.querySelector<HTMLButtonElement>('button');
+    if (!minimize)
+      throw new Error('expected the minimize button');
+    await act(async () => {
+      minimize.click();
+    });
+
+    const mover = findWindow('Mover');
+    if (!mover)
+      throw new Error('expected the mover');
+
+    // Without the (now minimized) sibling as a target, the raw position stands.
+    await act(async () => {
+      drag(mover, -95);
+    });
+
+    expect(mover.style.left).toBe('305px');
+  });
+});

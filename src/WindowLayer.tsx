@@ -1,4 +1,4 @@
-import type { Bounds, WindowLayerProps } from './types';
+import type { Bounds, Rect, WindowLayerProps } from './types';
 import { createContext } from 'preact';
 import { useContext, useMemo, useRef } from 'preact/hooks';
 
@@ -12,6 +12,18 @@ export interface WindowLayerContext {
    */
   getBounds: () => Bounds;
   /**
+   * The rectangles of every other live window, for snapping. Excludes the
+   * caller's own getter and any window that reports `null` (closed or
+   * minimized).
+   */
+  getSnapRects: (exclude: () => Rect | null) => Rect[];
+  /**
+   * Register a window so its rectangle can be a snap target for its siblings.
+   * `getRect` returns the window's current rectangle, or `null` while it is not
+   * a valid target. Returns an unregister function.
+   */
+  registerWindow: (getRect: () => Rect | null) => () => void;
+  /**
    * Calls `listener` whenever the layer's size changes, including the first time
    * it becomes measurable (a container that starts hidden). Returns an
    * unsubscribe. A no-op when the observer is unavailable.
@@ -22,6 +34,8 @@ export interface WindowLayerContext {
 const fallbackContext: WindowLayerContext = {
   focus: () => 1,
   getBounds: () => ({ h: 0, w: 0 }),
+  getSnapRects: () => [],
+  registerWindow: () => () => {},
   subscribe: () => () => {},
 };
 
@@ -47,6 +61,7 @@ export function useWindowLayer(): WindowLayerContext {
 export function WindowLayer({ children, class: className }: WindowLayerProps) {
   const top = useRef(1);
   const element = useRef<HTMLDivElement>(null);
+  const windows = useRef(new Set<() => Rect | null>());
 
   // Stable identity. A fresh context object per render would re-render every
   // hosted window on any unrelated layer render.
@@ -60,6 +75,23 @@ export function WindowLayer({ children, class: className }: WindowLayerProps) {
       if (rect && rect.width > 0 && rect.height > 0)
         return { h: rect.height, w: rect.width };
       return { h: 0, w: 0 };
+    },
+    getSnapRects: (exclude) => {
+      const rects: Rect[] = [];
+      for (const getRect of windows.current) {
+        if (getRect === exclude)
+          continue;
+        const rect = getRect();
+        if (rect)
+          rects.push(rect);
+      }
+      return rects;
+    },
+    registerWindow: (getRect) => {
+      windows.current.add(getRect);
+      return () => {
+        windows.current.delete(getRect);
+      };
     },
     subscribe: (listener) => {
       const node = element.current;

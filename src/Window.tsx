@@ -1,11 +1,14 @@
-import type { Point, ResizeEdges, Size, StorageLike, WindowLayout, WindowProps } from './types';
+import type { Point, Rect, ResizeEdges, Size, StorageLike, WindowLayout, WindowProps } from './types';
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 
-import { clampPosition, clampSize, DEFAULT_MIN, DEFAULT_POS, DEFAULT_SIZE, readSavedLayout, resizeRect, toPoint, toSize, writeSavedLayout } from './layout';
+import { clampPosition, clampSize, DEFAULT_MIN, DEFAULT_POS, DEFAULT_SIZE, readSavedLayout, resizeRect, snapLines, snapPosition, snapResizeDelta, toPoint, toSize, writeSavedLayout } from './layout';
 import { useWindowLayer } from './WindowLayer';
 
 /** Debounce for writing layout to storage, so a drag is one write, not hundreds. */
 const SAVE_DEBOUNCE_MS = 300;
+
+/** How near, in CSS pixels, an edge must come to a snap line before it jumps. */
+const SNAP_THRESHOLD = 8;
 
 /**
  * The eight resize handles, in DOM order. Corners come after edges so they paint
@@ -39,7 +42,7 @@ const defaultStorage: StorageLike = {
  * `persistKey`, layout survives reloads and open/close toggles.
  */
 export function Window(props: WindowProps) {
-  const { children, defaultPosition, defaultSize, minSize, onClose, onLayoutChange, open, persistKey, storage: storageProp, title } = props;
+  const { children, defaultPosition, defaultSize, minSize, onClose, onLayoutChange, open, persistKey, snap, storage: storageProp, title } = props;
   const layer = useWindowLayer();
 
   // Props are as untrusted as storage — a `NaN` would reach a CSS value.
@@ -67,8 +70,19 @@ export function Window(props: WindowProps) {
 
   // Latest committed layout, so the fit / persist / unmount effects never read a
   // stale closure.
-  const latest = useRef({ minimized, pos, size });
-  latest.current = { minimized, pos, size };
+  const latest = useRef({ minimized, open, pos, size });
+  latest.current = { minimized, open, pos, size };
+
+  // Register this window as a snap target. A closed or minimized window reports
+  // `null`, so it is never something another window snaps to. The getter is
+  // stable and reads the live layout, so the layer needs no move notifications.
+  const getSnapRect = useCallback((): Rect | null => {
+    const current = latest.current;
+    if (!current.open || current.minimized)
+      return null;
+    return { h: current.size.h, w: current.size.w, x: current.pos.x, y: current.pos.y };
+  }, []);
+  useEffect(() => layer.registerWindow(getSnapRect), [layer, getSnapRect]);
 
   /**
    * Raise the window, and take focus when it is not already inside — so clicking
@@ -248,9 +262,18 @@ export function Window(props: WindowProps) {
     followPointer(event, (delta) => {
       const requested = { x: origin.x + delta.x, y: origin.y + delta.y };
       const bounds = layer.getBounds();
-      const nextPos = bounds.w > 0 && bounds.h > 0
-        ? clampPosition(requested, latest.current.size, bounds)
-        : { x: Math.max(0, requested.x), y: Math.max(0, requested.y) };
+      const measurable = bounds.w > 0 && bounds.h > 0;
+      if (!measurable) {
+        const nextPos = { x: Math.max(0, requested.x), y: Math.max(0, requested.y) };
+        setPos(nextPos);
+        reportLayout({ minimized: latest.current.minimized, pos: nextPos, size: latest.current.size });
+        return;
+      }
+
+      const snapped = snap
+        ? snapPosition(requested, latest.current.size, snapLines(bounds, layer.getSnapRects(getSnapRect)), SNAP_THRESHOLD)
+        : requested;
+      const nextPos = clampPosition(snapped, latest.current.size, bounds);
       setPos(nextPos);
       reportLayout({ minimized: latest.current.minimized, pos: nextPos, size: latest.current.size });
     });
@@ -265,7 +288,10 @@ export function Window(props: WindowProps) {
       const bounds = layer.getBounds();
       const measurable = bounds.w > 0 && bounds.h > 0;
 
-      const next = resizeRect(origin, edges, delta, minFloor, measurable ? bounds : undefined);
+      const snappedDelta = snap && measurable
+        ? snapResizeDelta(origin, edges, delta, snapLines(bounds, layer.getSnapRects(getSnapRect)), SNAP_THRESHOLD)
+        : delta;
+      const next = resizeRect(origin, edges, snappedDelta, minFloor, measurable ? bounds : undefined);
       setSize(next.size);
       // Only the west/north edges move the origin; the others leave it untouched.
       if (next.pos.x !== latest.current.pos.x || next.pos.y !== latest.current.pos.y)

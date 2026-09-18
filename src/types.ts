@@ -16,6 +16,14 @@ export interface Bounds {
   w: number;
 }
 
+/** A window's rectangle in layer coordinates, used as a snap target. */
+export interface Rect {
+  h: number;
+  w: number;
+  x: number;
+  y: number;
+}
+
 /**
  * Which edges a resize gesture moves. An absent axis stays anchored; `w`/`n`
  * move the window's origin as they resize, `e`/`s` grow from a fixed origin.
@@ -73,6 +81,13 @@ export interface WindowProps {
   defaultSize?: Size;
   /** Minimum size while resizing. */
   minSize?: Size;
+  /**
+   * Align this window's edges to the layer edges and to other windows while
+   * dragging or resizing, snapping when an edge comes within a few pixels.
+   * Off by default. A window is a snap *target* for others regardless of this
+   * flag; the flag only controls whether *this* window snaps.
+   */
+  snap?: boolean;
   /**
    * Key for layout persistence; when set, position/size/minimized persist
    * across reloads. Reopening a window that was closed shows it restored (not

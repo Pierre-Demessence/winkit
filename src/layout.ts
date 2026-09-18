@@ -4,7 +4,7 @@
  * are unit-testable without a browser.
  */
 
-import type { Bounds, Point, ResizeEdges, SavedLayout, Size, StorageLike } from './types';
+import type { Bounds, Point, Rect, ResizeEdges, SavedLayout, Size, StorageLike } from './types';
 
 export const DEFAULT_POS: Point = { x: 24, y: 64 };
 export const DEFAULT_SIZE: Size = { w: 320, h: 220 };
@@ -159,4 +159,104 @@ export function resizeRect(
   }
 
   return { pos: { x, y }, size: { h, w } };
+}
+
+/** Candidate snap lines along each axis: the layer edges plus every window edge. */
+export interface SnapLines {
+  x: number[];
+  y: number[];
+}
+
+/**
+ * The snap lines for a layer of `bounds` containing `rects`: the two layer edges
+ * on each axis, plus the near and far edge of every window.
+ */
+export function snapLines(bounds: Bounds, rects: Rect[]): SnapLines {
+  const x = [0, bounds.w];
+  const y = [0, bounds.h];
+  for (const rect of rects) {
+    x.push(rect.x, rect.x + rect.w);
+    y.push(rect.y, rect.y + rect.h);
+  }
+  return { x, y };
+}
+
+/** The line nearest to `value` within `threshold`, or `undefined` if none is. */
+function nearestLine(value: number, lines: number[], threshold: number): number | undefined {
+  let best: number | undefined;
+  let bestDistance = threshold;
+  for (const line of lines) {
+    const distance = Math.abs(value - line);
+    // `<=` so exact ties resolve to the later line — deterministic, and lets a
+    // sibling edge win over a layer edge it coincides with.
+    if (distance <= bestDistance) {
+      bestDistance = distance;
+      best = line;
+    }
+  }
+  return best;
+}
+
+/**
+ * Snaps a dragged window's position: whichever of its left/right edges is nearest
+ * a vertical line jumps to it, and likewise for its top/bottom against horizontal
+ * lines. Size is unchanged. The result still needs clamping to the layer.
+ */
+export function snapPosition(pos: Point, size: Size, lines: SnapLines, threshold: number): Point {
+  return {
+    x: snapAxis(pos.x, size.w, lines.x, threshold),
+    y: snapAxis(pos.y, size.h, lines.y, threshold),
+  };
+}
+
+/** Snaps one axis by moving whichever edge (near or far) sits closest to a line. */
+function snapAxis(start: number, extent: number, lines: number[], threshold: number): number {
+  const near = nearestLine(start, lines, threshold);
+  const far = nearestLine(start + extent, lines, threshold);
+  const nearDistance = near === undefined ? Infinity : Math.abs(start - near);
+  const farDistance = far === undefined ? Infinity : Math.abs(start + extent - far);
+  if (nearDistance <= farDistance && near !== undefined)
+    return near;
+  if (far !== undefined)
+    return far - extent;
+  return start;
+}
+
+/**
+ * Adjusts a resize gesture's delta so a moving edge snaps to a nearby line. Only
+ * the edges named by `edges` move; the returned delta is fed back through
+ * `resizeRect`, so all the minimum-size and bounds clamping is reused unchanged.
+ */
+export function snapResizeDelta(
+  origin: { pos: Point; size: Size },
+  edges: ResizeEdges,
+  delta: Point,
+  lines: SnapLines,
+  threshold: number,
+): Point {
+  let { x, y } = delta;
+
+  if (edges.x === 'e') {
+    const line = nearestLine(origin.pos.x + origin.size.w + delta.x, lines.x, threshold);
+    if (line !== undefined)
+      x = line - (origin.pos.x + origin.size.w);
+  }
+  else if (edges.x === 'w') {
+    const line = nearestLine(origin.pos.x + delta.x, lines.x, threshold);
+    if (line !== undefined)
+      x = line - origin.pos.x;
+  }
+
+  if (edges.y === 's') {
+    const line = nearestLine(origin.pos.y + origin.size.h + delta.y, lines.y, threshold);
+    if (line !== undefined)
+      y = line - (origin.pos.y + origin.size.h);
+  }
+  else if (edges.y === 'n') {
+    const line = nearestLine(origin.pos.y + delta.y, lines.y, threshold);
+    if (line !== undefined)
+      y = line - origin.pos.y;
+  }
+
+  return { x, y };
 }

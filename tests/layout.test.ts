@@ -1,7 +1,7 @@
 import type { StorageLike } from '../src/types';
 import { describe, expect, it } from 'vitest';
 
-import { clampPosition, clampSize, DEFAULT_MIN, DEFAULT_POS, DEFAULT_SIZE, parseSavedLayout, readSavedLayout, resizeRect, toPoint, toSize, writeSavedLayout } from '../src/layout';
+import { clampPosition, clampSize, DEFAULT_MIN, DEFAULT_POS, DEFAULT_SIZE, parseSavedLayout, readSavedLayout, resizeRect, snapLines, snapPosition, snapResizeDelta, toPoint, toSize, writeSavedLayout } from '../src/layout';
 
 const BOUNDS = { h: 600, w: 800 };
 
@@ -90,6 +90,74 @@ describe('resizeRect', () => {
     const next = resizeRect(ORIGIN, { x: 'e', y: 's' }, { x: 999, y: 999 }, DEFAULT_MIN, undefined);
     expect(next.size).toEqual({ h: 1199, w: 1299 });
     expect(next.pos).toEqual({ x: 100, y: 80 });
+  });
+});
+
+describe('snapLines', () => {
+  it('collects the layer edges and both edges of every window', () => {
+    const lines = snapLines({ h: 600, w: 800 }, [{ h: 150, w: 200, x: 100, y: 50 }]);
+    expect(lines.x).toEqual([0, 800, 100, 300]);
+    expect(lines.y).toEqual([0, 600, 50, 200]);
+  });
+});
+
+describe('snapPosition', () => {
+  const LINES = snapLines({ h: 600, w: 800 }, [{ h: 150, w: 200, x: 100, y: 50 }]);
+
+  it('snaps a near edge to the layer origin', () => {
+    expect(snapPosition({ x: 5, y: 300 }, { h: 100, w: 200 }, LINES, 8)).toEqual({ x: 0, y: 300 });
+  });
+
+  it('snaps a far edge to the layer end', () => {
+    expect(snapPosition({ x: 595, y: 0 }, { h: 100, w: 200 }, LINES, 8).x).toBe(600);
+  });
+
+  it('snaps a near edge to a sibling far edge for adjacency', () => {
+    // The sibling's right edge is 300; a left edge at 296 jumps to touch it.
+    expect(snapPosition({ x: 296, y: 400 }, { h: 100, w: 200 }, LINES, 8).x).toBe(300);
+  });
+
+  it('leaves an edge beyond the threshold untouched', () => {
+    expect(snapPosition({ x: 20, y: 300 }, { h: 100, w: 200 }, LINES, 8)).toEqual({ x: 20, y: 300 });
+  });
+
+  it('takes the nearer line when two are in range', () => {
+    const lines = { x: [0, 10], y: [] as number[] };
+    expect(snapPosition({ x: 3, y: 0 }, { h: 100, w: 200 }, lines, 8).x).toBe(0);
+    expect(snapPosition({ x: 7, y: 0 }, { h: 100, w: 200 }, lines, 8).x).toBe(10);
+  });
+});
+
+describe('snapResizeDelta', () => {
+  const ORIGIN = { pos: { x: 100, y: 100 }, size: { h: 150, w: 200 } };
+
+  it('snaps a growing east edge to a nearby line', () => {
+    // East edge starts at 300; grown to 315 it snaps to the line at 320.
+    const delta = snapResizeDelta(ORIGIN, { x: 'e' }, { x: 15, y: 0 }, { x: [0, 320], y: [] }, 8);
+    expect(delta.x).toBe(20);
+  });
+
+  it('snaps a moving west edge to a nearby line', () => {
+    // West edge starts at 100; moved to 85 it snaps to the line at 80.
+    const delta = snapResizeDelta(ORIGIN, { x: 'w' }, { x: -15, y: 0 }, { x: [0, 80], y: [] }, 8);
+    expect(delta.x).toBe(-20);
+  });
+
+  it('snaps a moving north edge to a nearby line', () => {
+    // North edge starts at 100; moved to 85 it snaps to the line at 80.
+    const delta = snapResizeDelta(ORIGIN, { y: 'n' }, { x: 0, y: -15 }, { x: [], y: [0, 80] }, 8);
+    expect(delta.y).toBe(-20);
+  });
+
+  it('snaps the south edge and leaves an inactive axis alone', () => {
+    const delta = snapResizeDelta(ORIGIN, { y: 's' }, { x: 999, y: 12 }, { x: [], y: [258] }, 8);
+    // Bottom edge 250 + 12 = 262 snaps to 258; the x delta is untouched.
+    expect(delta).toEqual({ x: 999, y: 8 });
+  });
+
+  it('leaves the delta unchanged when no line is near', () => {
+    const delta = snapResizeDelta(ORIGIN, { x: 'e' }, { x: 15, y: 0 }, { x: [0, 800], y: [] }, 8);
+    expect(delta).toEqual({ x: 15, y: 0 });
   });
 });
 

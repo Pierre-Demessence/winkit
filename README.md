@@ -89,6 +89,7 @@ and windows are clamped to its measured size. It covers the viewport by default.
 | `defaultPosition` | `Point` | Used when no persisted layout exists |
 | `defaultSize` | `Size` | Used when no persisted layout exists |
 | `minSize` | `Size` | Floor while resizing |
+| `snap` | `boolean` | Align edges to the layer and to other windows while dragging or resizing. Off by default |
 | `persistKey` | `string` | Persists position/size/minimized. Reopening a *closed* window restores it; a window minimized at reload stays minimized |
 | `storage` | `StorageLike` | Where layout is persisted. Defaults to `localStorage`. Must be referentially stable |
 | `onClose` | `() => void` | Adds the close button and the Escape shortcut (active while focus is inside the window) |
