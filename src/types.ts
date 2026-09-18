@@ -41,6 +41,13 @@ export interface SavedLayout {
   size?: Size;
 }
 
+/** A window's current committed layout, as reported to `onLayoutChange`. */
+export interface WindowLayout {
+  minimized: boolean;
+  pos: Point;
+  size: Size;
+}
+
 export interface WindowLayerProps {
   /**
    * Extra class on the layer element. By default the layer covers the viewport;
@@ -79,5 +86,13 @@ export interface WindowProps {
   storage?: StorageLike;
   /** Enables the close button and the Escape shortcut. */
   onClose?: () => void;
+  /**
+   * Observe the window's moves, resizes and minimize toggles. Fires on each
+   * drag move, resize step and minimize toggle — once per pointer move during a
+   * gesture. It never fires for the initial mount or an automatic re-clamp
+   * (a viewport or monitor change), only for a change the host's user caused.
+   * Debounce inside the handler if you want fewer calls.
+   */
+  onLayoutChange?: (layout: WindowLayout) => void;
   children?: ComponentChildren;
 }

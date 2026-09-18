@@ -1,4 +1,4 @@
-import type { Point, ResizeEdges, Size, StorageLike, WindowProps } from './types';
+import type { Point, ResizeEdges, Size, StorageLike, WindowLayout, WindowProps } from './types';
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 
 import { clampPosition, clampSize, DEFAULT_MIN, DEFAULT_POS, DEFAULT_SIZE, readSavedLayout, resizeRect, toPoint, toSize, writeSavedLayout } from './layout';
@@ -39,7 +39,7 @@ const defaultStorage: StorageLike = {
  * `persistKey`, layout survives reloads and open/close toggles.
  */
 export function Window(props: WindowProps) {
-  const { children, defaultPosition, defaultSize, minSize, onClose, open, persistKey, storage: storageProp, title } = props;
+  const { children, defaultPosition, defaultSize, minSize, onClose, onLayoutChange, open, persistKey, storage: storageProp, title } = props;
   const layer = useWindowLayer();
 
   // Props are as untrusted as storage — a `NaN` would reach a CSS value.
@@ -129,6 +129,17 @@ export function Window(props: WindowProps) {
         writeSavedLayout(storage, persistKey, latest.current);
     };
   }, [persistKey, storage]);
+
+  // Report layout changes to the host. Fired imperatively from the user actions
+  // that move, resize or minimize the window — never from a mount-time or
+  // viewport re-clamp, which would surprise a host with a change it did not
+  // cause. The callback lives in a ref so a gesture in flight always sees the
+  // latest handler.
+  const onLayoutChangeRef = useRef(onLayoutChange);
+  onLayoutChangeRef.current = onLayoutChange;
+  const reportLayout = (layout: WindowLayout): void => {
+    onLayoutChangeRef.current?.(layout);
+  };
 
   // Reopening a closed window restores and raises it; a reopened window that
   // kept its old z-index could reappear underneath newer ones. Relies on the
@@ -235,11 +246,13 @@ export function Window(props: WindowProps) {
 
     const origin = latest.current.pos;
     followPointer(event, (delta) => {
-      const next = { x: origin.x + delta.x, y: origin.y + delta.y };
+      const requested = { x: origin.x + delta.x, y: origin.y + delta.y };
       const bounds = layer.getBounds();
-      setPos(bounds.w > 0 && bounds.h > 0
-        ? clampPosition(next, latest.current.size, bounds)
-        : { x: Math.max(0, next.x), y: Math.max(0, next.y) });
+      const nextPos = bounds.w > 0 && bounds.h > 0
+        ? clampPosition(requested, latest.current.size, bounds)
+        : { x: Math.max(0, requested.x), y: Math.max(0, requested.y) };
+      setPos(nextPos);
+      reportLayout({ minimized: latest.current.minimized, pos: nextPos, size: latest.current.size });
     });
   };
 
@@ -257,6 +270,7 @@ export function Window(props: WindowProps) {
       // Only the west/north edges move the origin; the others leave it untouched.
       if (next.pos.x !== latest.current.pos.x || next.pos.y !== latest.current.pos.y)
         setPos(next.pos);
+      reportLayout({ minimized: latest.current.minimized, pos: next.pos, size: next.size });
     });
   };
 
@@ -294,7 +308,11 @@ export function Window(props: WindowProps) {
           aria-label={minimized ? 'Restore window' : 'Minimize window'}
           class="wk-btn"
           title={minimized ? 'Restore' : 'Minimize'}
-          onClick={() => setMinimized(m => !m)}
+          onClick={() => {
+            const next = !latest.current.minimized;
+            setMinimized(next);
+            reportLayout({ minimized: next, pos: latest.current.pos, size: latest.current.size });
+          }}
         >
           {minimized ? '□' : '–'}
         </button>

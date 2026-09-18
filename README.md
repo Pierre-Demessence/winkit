@@ -92,6 +92,7 @@ and windows are clamped to its measured size. It covers the viewport by default.
 | `persistKey` | `string` | Persists position/size/minimized. Reopening a *closed* window restores it; a window minimized at reload stays minimized |
 | `storage` | `StorageLike` | Where layout is persisted. Defaults to `localStorage`. Must be referentially stable |
 | `onClose` | `() => void` | Adds the close button and the Escape shortcut (active while focus is inside the window) |
+| `onLayoutChange` | `(layout: WindowLayout) => void` | Observe moves, resizes and minimize toggles. Fires per pointer move during a gesture, never on mount |
 
 Pressing Escape closes the window, but only when `onClose` is provided — no dead
 controls, and no unhandled shortcut.

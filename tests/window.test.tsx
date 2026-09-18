@@ -407,3 +407,119 @@ describe('resize gestures', () => {
     expect(element?.style.height).toBe('260px');
   });
 });
+
+describe('onLayoutChange', () => {
+  it('does not fire on the initial mount', async () => {
+    const onLayoutChange = vi.fn();
+    await act(async () => {
+      render(
+        <WindowLayer>
+          <Window open title="T" onLayoutChange={onLayoutChange} />
+        </WindowLayer>,
+        host,
+      );
+    });
+
+    expect(onLayoutChange).not.toHaveBeenCalled();
+  });
+
+  it('reports the new position while dragging', async () => {
+    const onLayoutChange = vi.fn();
+    await act(async () => {
+      render(
+        <WindowLayer>
+          <Window open defaultPosition={{ x: 24, y: 64 }} title="T" onLayoutChange={onLayoutChange} />
+        </WindowLayer>,
+        host,
+      );
+    });
+
+    const title = host.querySelector<HTMLElement>('.wk-title');
+    if (!title)
+      throw new Error('expected a title bar');
+
+    await act(async () => {
+      pointerDown(title, 1);
+      window.dispatchEvent(pointerEvent('pointermove', 1, { clientX: 50, clientY: 10 }));
+    });
+
+    expect(onLayoutChange).toHaveBeenLastCalledWith({
+      minimized: false,
+      pos: { x: 74, y: 74 },
+      size: { h: 220, w: 320 },
+    });
+  });
+
+  it('reports a minimize toggle', async () => {
+    const onLayoutChange = vi.fn();
+    await act(async () => {
+      render(
+        <WindowLayer>
+          <Window open title="T" onLayoutChange={onLayoutChange} />
+        </WindowLayer>,
+        host,
+      );
+    });
+
+    const button = host.querySelector<HTMLButtonElement>('button');
+    if (!button)
+      throw new Error('expected the minimize button');
+
+    await act(async () => {
+      button.click();
+    });
+
+    expect(onLayoutChange).toHaveBeenLastCalledWith({
+      minimized: true,
+      pos: { x: 24, y: 64 },
+      size: { h: 220, w: 320 },
+    });
+  });
+
+  it('reports the new size while resizing', async () => {
+    const onLayoutChange = vi.fn();
+    await act(async () => {
+      render(
+        <WindowLayer>
+          <Window open defaultSize={{ h: 220, w: 320 }} title="T" onLayoutChange={onLayoutChange} />
+        </WindowLayer>,
+        host,
+      );
+    });
+
+    const handle = host.querySelector<HTMLElement>('.wk-resize-se');
+    if (!handle)
+      throw new Error('expected a south-east handle');
+
+    await act(async () => {
+      pointerDown(handle, 1);
+      window.dispatchEvent(pointerEvent('pointermove', 1, { clientX: 40, clientY: 30 }));
+    });
+
+    expect(onLayoutChange).toHaveBeenLastCalledWith({
+      minimized: false,
+      pos: { x: 24, y: 64 },
+      size: { h: 250, w: 360 },
+    });
+  });
+
+  it('does not fire merely because the window re-renders with a new handler', async () => {
+    const first = vi.fn();
+    const second = vi.fn();
+    const view = (handler: () => void) => (
+      <WindowLayer>
+        <Window open title="T" onLayoutChange={handler} />
+      </WindowLayer>
+    );
+
+    await act(async () => {
+      render(view(first), host);
+    });
+    await act(async () => {
+      render(view(second), host);
+    });
+
+    expect(first).not.toHaveBeenCalled();
+    expect(second).not.toHaveBeenCalled();
+  });
+});

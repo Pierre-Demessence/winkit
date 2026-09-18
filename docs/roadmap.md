@@ -28,7 +28,6 @@ here is committed to a release.
 
 ## API
 
-- **`onLayoutChange`** — let the host observe moves and resizes.
 - **Imperative ref handle** — programmatic move / resize / maximize.
 - **Dev warning** when a `Window` renders outside a `WindowLayer`, where focus
   and clamping silently degrade.

@@ -9,6 +9,7 @@
 | Resize from any edge | Built | Eight handles — four edges and four corners; west/north edges move the origin. Respects `minSize` and the layer bounds |
 | Minimize / restore | Built | Per window, remembered across reloads |
 | Close | Built | Only when the host passes `onClose` — no dead control |
+| Observe layout | Built | `onLayoutChange` reports moves, resizes and minimize toggles; fires per move during a gesture, never on mount |
 | Click-to-front stacking | Built | Clicking anywhere in a window raises it; a newly mounted window starts above the ones already there, and a reopened one returns to the front |
 | Layout persistence | Built | Opt-in per window via `persistKey`; validated on read |
 | Custom persistence target | Built | `storage` accepts any `{ getItem, setItem }` |
