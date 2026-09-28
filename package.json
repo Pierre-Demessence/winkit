@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.1.0",
   "private": true,
-  "description": "A tiny, self-contained floating-window system for Preact. Drag, resize, minimize, click-to-front stacking and layout persistence, with no host coupling.",
+  "description": "A tiny, self-contained floating-window system for Preact and React. Drag, resize, minimize, click-to-front stacking and layout persistence, with no host coupling.",
   "author": "Pierre Demessence <pierre.demessence@gmail.com>",
   "license": "MIT",
   "homepage": "https://github.com/Pierre-Demessence/winkit#readme",
@@ -16,6 +16,7 @@
   },
   "keywords": [
     "preact",
+    "react",
     "window",
     "panel",
     "floating",
@@ -29,6 +30,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js"
+    },
     "./styles.css": "./dist/winkit.css"
   },
   "main": "./dist/index.js",
@@ -40,8 +45,8 @@
     "node": ">=20.19.0"
   },
   "scripts": {
-    "build": "tsup",
-    "typecheck": "tsc --noEmit",
+    "build": "tsup && tsup --config tsup.react.config.ts",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.react.json --noEmit",
     "lint": "eslint --cache .",
     "lint:fix": "eslint --cache --fix .",
     "test": "vitest run",
@@ -51,15 +56,28 @@
     "prepare": "npm run build"
   },
   "peerDependencies": {
-    "preact": "^10.0.0"
+    "preact": "^10.0.0",
+    "react": ">=18.2"
+  },
+  "peerDependenciesMeta": {
+    "preact": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@antfu/eslint-config": "^8.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^10.2.0",
     "jiti": "^2.7.0",
     "jsdom": "^29.0.1",
     "preact": "^10.29.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "tsup": "^8.3.5",
     "typescript": "~5.9.3",
     "vitest": "^4.1.11"

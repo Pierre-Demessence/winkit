@@ -1,5 +1,8 @@
 import { defineConfig } from 'tsup';
 
+// The Preact build. The React build is a second config (`tsup.react.config.ts`)
+// run by the `build` script *after* this one, so this `clean` can never race a
+// React artifact into deletion — tsup runs the configs of an array concurrently.
 export default defineConfig({
   clean: true,
   // Declarations come from the JS entry alone; the stylesheet entry has no types

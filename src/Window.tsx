@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import type { Point, Rect, ResizeEdges, Size, StorageLike, WindowLayout, WindowProps } from './types';
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 
@@ -26,8 +27,33 @@ const RESIZE_HANDLES: { edges: ResizeEdges; name: string }[] = [
 ];
 
 /**
- * Monotonic per-document counter for the title's id. `useId` is per Preact root,
- * so two roots in one document would collide; this cannot.
+ * The pointer fields a gesture reads, as a structural minimum. Preact hands
+ * handlers the native `PointerEvent` and React hands them a synthetic one; both
+ * satisfy this, so one handler serves either build.
+ */
+interface PointerLike {
+  button: number;
+  clientX: number;
+  clientY: number;
+  currentTarget: EventTarget | null;
+  pointerId: number;
+  preventDefault: () => void;
+  stopPropagation: () => void;
+  target: EventTarget | null;
+}
+
+/**
+ * The key fields the Escape shortcut reads. Structural, for the same reason as
+ * `PointerLike`.
+ */
+interface KeyLike {
+  key: string;
+  stopPropagation: () => void;
+}
+
+/**
+ * Monotonic per-document counter for the title's id. `useId` is per root, so two
+ * roots in one document would collide; this cannot.
  */
 let instanceSequence = 0;
 
@@ -60,9 +86,8 @@ export function Window(props: WindowProps) {
   // never fires the open transition below, so without this a freshly opened window
   // would start at the bottom of the stack and appear behind windows the user has
   // already clicked — the one window they just asked for being the hidden one.
-  // Safe during render: Preact invokes a state initialiser exactly once and does not
-  // double-render (its StrictMode is a pass-through), and the worst case of a render
-  // that never commits is a skipped number, which nothing observes.
+  // Called during render, which React's StrictMode replays; the worst case of a
+  // render that never commits is a skipped number, which nothing observes.
   const [z, setZ] = useState(() => layer.focus());
 
   const windowRef = useRef<HTMLDivElement>(null);
@@ -193,9 +218,9 @@ export function Window(props: WindowProps) {
    * up.
    */
   const beginGesture = (
-    event: PointerEvent,
+    event: PointerLike,
     target: HTMLElement | null,
-    onMove: (move: PointerEvent) => void,
+    onMove: (move: PointerLike) => void,
   ): void => {
     event.preventDefault();
 
@@ -205,7 +230,7 @@ export function Window(props: WindowProps) {
 
     // Only this pointer drives this gesture: a second finger must not move, or
     // end, a drag it did not start.
-    const move = (moveEvent: PointerEvent): void => {
+    const move = (moveEvent: PointerLike): void => {
       if (moveEvent.pointerId === pointerId)
         onMove(moveEvent);
     };
@@ -219,7 +244,7 @@ export function Window(props: WindowProps) {
       gestures.current.delete(pointerId);
     }
 
-    function end(endEvent: PointerEvent): void {
+    function end(endEvent: PointerLike): void {
       if (endEvent.pointerId === pointerId)
         release();
     }
@@ -238,7 +263,7 @@ export function Window(props: WindowProps) {
    * press from reaching the layer, then report pointer deltas from the press
    * point until release. The capture target is the element carrying the handler.
    */
-  const followPointer = (event: PointerEvent, onDelta: (delta: Point) => void): void => {
+  const followPointer = (event: PointerLike, onDelta: (delta: Point) => void): void => {
     bringToFront();
     event.stopPropagation();
 
@@ -250,7 +275,7 @@ export function Window(props: WindowProps) {
     });
   };
 
-  const startDrag = (event: PointerEvent): void => {
+  const startDrag = (event: PointerLike): void => {
     if (event.button !== 0)
       return;
     // The minimize/close buttons sit inside the title bar, so a press on one of
@@ -279,7 +304,7 @@ export function Window(props: WindowProps) {
     });
   };
 
-  const startResize = (edges: ResizeEdges) => (event: PointerEvent): void => {
+  const startResize = (edges: ResizeEdges) => (event: PointerLike): void => {
     if (event.button !== 0)
       return;
 
@@ -300,7 +325,7 @@ export function Window(props: WindowProps) {
     });
   };
 
-  const handleKeyDown = (event: KeyboardEvent): void => {
+  const handleKeyDown = (event: KeyLike): void => {
     if (event.key !== 'Escape' || !onClose)
       return;
     event.stopPropagation();
@@ -314,7 +339,7 @@ export function Window(props: WindowProps) {
     <div
       ref={windowRef}
       aria-labelledby={titleId}
-      class="wk-window"
+      className="wk-window"
       role="dialog"
       style={{
         height: minimized ? undefined : `${size.h}px`,
@@ -327,12 +352,12 @@ export function Window(props: WindowProps) {
       onKeyDown={handleKeyDown}
       onPointerDown={bringToFront}
     >
-      <div class="wk-title" onPointerDown={startDrag}>
-        <span id={titleId} class="wk-title-text">{title}</span>
+      <div className="wk-title" onPointerDown={startDrag}>
+        <span id={titleId} className="wk-title-text">{title}</span>
         <button
           type="button"
           aria-label={minimized ? 'Restore window' : 'Minimize window'}
-          class="wk-btn"
+          className="wk-btn"
           title={minimized ? 'Restore' : 'Minimize'}
           onClick={() => {
             const next = !latest.current.minimized;
@@ -343,17 +368,17 @@ export function Window(props: WindowProps) {
           {minimized ? '□' : '–'}
         </button>
         {onClose && (
-          <button type="button" aria-label="Close window" class="wk-btn" title="Close" onClick={onClose}>
+          <button type="button" aria-label="Close window" className="wk-btn" title="Close" onClick={onClose}>
             ×
           </button>
         )}
       </div>
-      {!minimized && <div class="wk-body">{children}</div>}
+      {!minimized && <div className="wk-body">{children as ComponentChildren}</div>}
       {!minimized && RESIZE_HANDLES.map(handle => (
         <div
           key={handle.name}
           aria-hidden="true"
-          class={`wk-resize wk-resize-${handle.name}`}
+          className={`wk-resize wk-resize-${handle.name}`}
           onPointerDown={startResize(handle.edges)}
         />
       ))}

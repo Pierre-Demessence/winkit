@@ -5,8 +5,9 @@ Agent operating notes for **winkit**. See [docs/INDEX.md](docs/INDEX.md) and
 
 ## What this is
 
-A Preact-only floating-window library. Consumed by sibling game and app projects
-as a `file:` dependency. `preact` is a peer dependency and is never bundled.
+A floating-window library for Preact and React. Consumed by sibling game and app
+projects as a `file:` dependency. One source tree, two builds; the framework is an
+optional peer dependency and is never bundled.
 
 ## Workflow
 
@@ -21,8 +22,9 @@ as a `file:` dependency. `preact` is a peer dependency and is never bundled.
 
 ## Invariants (do not break)
 
-- **Preact is the only runtime dependency.** Adding another is a design change,
-  not a convenience.
+- **Preact and React are optional peers, never bundled.** A host installs the one
+  it uses and imports the matching entry point. Neither is a convenience to swap,
+  and no other runtime dependency is acceptable.
 - **The library knows nothing about its host.** No app-specific concepts, no
   global state, no assumptions about what is behind the layer.
 - **Storage is untrusted.** Anything read from persistence is validated in
@@ -56,3 +58,14 @@ as a `file:` dependency. `preact` is a peer dependency and is never bundled.
   would make the bundle depend on it. Declarations are scoped with
   `dts: { entry: 'src/index.ts' }`, without which the CSS entry emits an empty
   `winkit.d.ts`.
+- **esbuild never resolves a path marked external**, so the React build needs
+  `noExternal: [/^preact/]` for its alias plugin to run at all. Without it the
+  plugin is bypassed and Preact is silently bundled into `dist/react/index.js` —
+  check the bundle stays ~16 kB and imports only from `react`.
+- **React and Preact hand handlers different events** — a synthetic one and the
+  native one. Handlers here take structural `PointerLike` / `KeyLike` shapes;
+  annotating one with `PointerEvent`/`KeyboardEvent` compiles for Preact and fails
+  the React type pass.
+- **`@types/react` uses `export =`**, so `export * from 'react'` in a shim
+  re-exports nothing and every named import goes missing. Shims must re-export
+  names explicitly.

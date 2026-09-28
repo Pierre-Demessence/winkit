@@ -1,4 +1,9 @@
-import type { ComponentChildren } from 'preact';
+/**
+ * Content accepted inside a window or layer. Framework-neutral on purpose: one
+ * declaration file cannot name both Preact's and React's child unions, and
+ * naming either would force that framework's types on consumers of the other.
+ */
+export type WindowChildren = unknown;
 
 export interface Point {
   x: number;
@@ -64,7 +69,9 @@ export interface WindowLayerProps {
    * specificity, e.g. `.wk-layer.guild-hall-layer { position: absolute; }`.
    */
   class?: string;
-  children?: ComponentChildren;
+  /** Alias for `class`; use in React hosts, where `class` is not a valid prop. */
+  className?: string;
+  children?: WindowChildren;
 }
 
 export interface WindowProps {
@@ -109,5 +116,5 @@ export interface WindowProps {
    * Debounce inside the handler if you want fewer calls.
    */
   onLayoutChange?: (layout: WindowLayout) => void;
-  children?: ComponentChildren;
+  children?: WindowChildren;
 }

@@ -1,11 +1,10 @@
 # winkit
 
-A tiny, self-contained floating-window system for Preact. Drag, resize,
+A tiny, self-contained floating-window system for Preact and React. Drag, resize,
 minimize, close, click-to-front stacking and layout persistence.
 
-Preact is the only dependency. Nothing here knows about a host application, so
-the library drops into any Preact app — or a game rendering behind a click-through
-layer.
+Nothing here knows about a host application, so the library drops into any Preact
+or React app — or a game rendering behind a click-through layer.
 
 ## Install
 
@@ -29,9 +28,26 @@ and tree-shakeable. Import it once, anywhere in the app:
 import '@pierre/winkit/styles.css';
 ```
 
+## Entry points
+
+| Import | Framework |
+|---|---|
+| `@pierre/winkit` | Preact |
+| `@pierre/winkit/react` | React |
+| `@pierre/winkit/styles.css` | Shared by either host |
+
+Both entries are built from one source tree. Import the one matching the host's
+framework: nothing detects it for you, and components from one framework cannot
+render inside the other's tree.
+
 ## Requirements
 
-- **Preact 10** — a peer dependency, supplied by the host application.
+- **Preact 10 or React 18.2+** — both are optional peers; the host supplies the one
+  it uses. React's floor is 18.2 because the declarations use `React.JSX`.
+- **Dedupe the framework when installing as a local folder.** A linked package
+  resolves its framework from its own directory, so if your app pins a different
+  version, tell your bundler to keep one copy (Vite:
+  `resolve.dedupe: ['react', 'react-dom']`). Two copies reject each other's elements.
 - **ESM only.** The package ships ES modules, so a CommonJS consumer has to use a
   dynamic `import()`. Bundlers and ESM applications are unaffected.
 - **Node ≥ 20.19** for the toolchain. The emitted JavaScript targets ES2020 and
@@ -66,6 +82,32 @@ function App() {
 The host app owns *which* windows are open; the library owns each window's
 behaviour.
 
+A React host imports the same components from the React entry point, and passes
+the layer's extra class as `className`:
+
+```tsx
+import { useState } from 'react';
+import { Window, WindowLayer } from '@pierre/winkit/react';
+
+// …identical usage; <WindowLayer className="guild-hall-layer">
+```
+
+## Examples
+
+`examples/preact` and `examples/react` are small standalone apps that show the
+library working, and double as the manual browser check. Build the library, then
+run one:
+
+```sh
+npm run build
+cd examples/react
+npm install
+npm run dev
+```
+
+Preact runs on port 5181 and React on 5182. See
+[`examples/README.md`](examples/README.md) for the full checklist.
+
 ## API
 
 ### `<WindowLayer>`
@@ -78,7 +120,7 @@ and windows are clamped to its measured size. It covers the viewport by default.
 
 | Prop | Type | Notes |
 |---|---|---|
-| `class` | `string` | Extra class on the layer element |
+| `class` / `className` | `string` | Extra class on the layer element. `class` is the Preact spelling; React hosts pass `className` |
 
 ### `<Window>`
 

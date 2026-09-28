@@ -4,6 +4,7 @@
 
 | Feature | Status | Notes |
 |---|---|---|
+| Runs on Preact or React | Built | One source tree, two entry points: `@pierre/winkit` for Preact, `@pierre/winkit/react` for React |
 | Floating windows over any content | Built | The layer is click-through where empty, so a canvas or dashboard below stays interactive |
 | Drag by the title bar | Built | Clamped to the layer; pointer capture keeps the drag alive outside the page |
 | Resize from any edge | Built | Eight handles — four edges and four corners; west/north edges move the origin. Respects `minSize` and the layer bounds |

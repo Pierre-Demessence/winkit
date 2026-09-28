@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import type { Bounds, Rect, WindowLayerProps } from './types';
 import { createContext } from 'preact';
 import { useContext, useMemo, useRef } from 'preact/hooks';
@@ -58,7 +59,7 @@ export function useWindowLayer(): WindowLayerContext {
  * relative to it and windows are clamped to its measured size. That means
  * confining the layer to a region automatically confines dragging too.
  */
-export function WindowLayer({ children, class: className }: WindowLayerProps) {
+export function WindowLayer({ children, class: classProp, className }: WindowLayerProps) {
   const top = useRef(1);
   const element = useRef<HTMLDivElement>(null);
   const windows = useRef(new Set<() => Rect | null>());
@@ -103,9 +104,11 @@ export function WindowLayer({ children, class: className }: WindowLayerProps) {
     },
   }), []);
 
+  const extraClass = className ?? classProp;
+
   return (
-    <div ref={element} class={className ? `wk-layer ${className}` : 'wk-layer'}>
-      <LayerContext.Provider value={context}>{children}</LayerContext.Provider>
+    <div ref={element} className={extraClass ? `wk-layer ${extraClass}` : 'wk-layer'}>
+      <LayerContext.Provider value={context}>{children as ComponentChildren}</LayerContext.Provider>
     </div>
   );
 }

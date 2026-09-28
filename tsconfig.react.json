@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "jsxImportSource": "react",
+    "paths": {
+      "preact": ["./shims/preact.d.ts"],
+      "preact/hooks": ["./shims/preact-hooks.d.ts"],
+      "preact/jsx-runtime": ["./shims/preact-jsx-runtime.d.ts"]
+    }
+  },
+  "include": ["src", "shims", "tests/react"],
+  "exclude": []
+}

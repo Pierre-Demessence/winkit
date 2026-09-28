@@ -1,0 +1,49 @@
+/* Page dressing for the example. None of this belongs to the library. */
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: radial-gradient(circle at 30% 20%, #24405c, #101823 70%);
+  color: #cfe3f5;
+  text-align: center;
+  cursor: pointer;
+}
+
+.backdrop p {
+  margin: 0;
+  max-width: 32rem;
+}
+
+.backdrop-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.reopen {
+  position: fixed;
+  inset-block-end: 1rem;
+  inset-inline-start: 1rem;
+  /* Above the layer, which defaults to --wk-layer-z: 20. */
+  z-index: 30;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: inherit;
+  background: #1b2836;
+  border: 1px solid #4d6b8a;
+  border-radius: 6px;
+  cursor: pointer;
+}
